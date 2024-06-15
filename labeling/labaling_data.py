@@ -8,9 +8,9 @@ time_colum = 'accelerometerTimestamp_sinceReboot(s)'
 data = pd.read_csv("daten/TischtennisTest1.csv", )
 
 clap_data = 162 #datenpunkt in dem das klatschen passiert
-clap_video = [1,0] #Sekunde plus frames in dem das klatschen passiert
-points = [[5,10,labels[0]],[6,23,labels[1]],[9,20,labels[1]]]
-video_fps = 24.0
+clap_video = [0,24] #Sekunde plus frames in dem das klatschen passiert
+points = [[5,12,labels[1]],[6,22,labels[1]],[8,11,labels[1]],[9,19,labels[1]]]
+video_fps = 25.0
 
 #Alles vor dem klatschen wird gelöscht
 data = data.iloc[clap_data:]
@@ -30,6 +30,8 @@ def label_at(seconds, label):
 
     index = (data[time_colum] - timestamp).abs().argmin()
     data.at[index,'label'] = label
+
+    marked_values.append(index)
     
 
 def label_data(points):
@@ -42,6 +44,15 @@ def label_data(points):
         if seconds > 0:
             label_at(seconds, label)
 
+marked_values = []
 label_data(points=points)
 data.to_csv('labeld_dataframe.csv', index=True, header=True)
 print(data['label'].dropna())
+
+plt.plot(data['accelerometerAccelerationX(G)']) 
+
+for value in marked_values:
+    plt.axvline(x=value, color='red', linestyle='--') 
+
+plt.xlabel('Index') 
+plt.show()
