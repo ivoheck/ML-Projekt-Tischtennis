@@ -5,7 +5,7 @@ labels = ['vorhand','rückhand']
 time_colum = 'accelerometerTimestamp_sinceReboot(s)'
 
 #Daten satz der gelabelt werden soll
-data = pd.read_csv("daten/TischtennisTest1.csv", usecols=[1,2,3,4])
+data = pd.read_csv("daten/TischtennisTest1.csv", )
 
 clap_data = 162 #datenpunkt in dem das klatschen passiert
 clap_video = [1,0] #Sekunde plus frames in dem das klatschen passiert
