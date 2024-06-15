@@ -5,7 +5,7 @@ from mpl_toolkits.mplot3d import Axes3D
 
 
 # Pfad zur CSV-Datei (ersetze diesen mit deinem tatsächlichen Dateipfad)
-file_path = ('/Users/henrydoose/Desktop/MAchine Learning/TischtennisTest1.csv')
+file_path = ('daten/TischtennisTest1.csv')
 
 # Lade die Daten
 data = pd.read_csv(file_path)

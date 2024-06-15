@@ -25,9 +25,11 @@ cutoff_frequency = 100  # Grenzfrequenz des Filters in Hz
 sampling_frequency = 500  # Abtastfrequenz der Daten in Hz
 filter_order = 5  # Ordnung des Tiefpassfilters
 
-#gefilterte_daten = apply_lowpass_filter(dataAccX['accelerometerAccelerationX(G)'], cutoff_frequency, sampling_frequency, filter_order)
+gefilterte_daten = apply_lowpass_filter(dataAccX['accelerometerAccelerationX(G)'], cutoff_frequency, sampling_frequency, filter_order)
 
-#plt.plot(gefilterte_daten, label='Gefilterte Daten')
+plt.plot(gefilterte_daten, label='Gefilterte Daten')
+
+#Label anzeigen
 plt.ylabel('accelerometerAccelerationX(G)')
 ranges = [(224, 243), (284, 297), (324, 347), (366, 390), (406, 430), (453, 493)]
 
