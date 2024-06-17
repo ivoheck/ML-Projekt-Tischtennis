@@ -15,6 +15,8 @@ video_fps = 25.0
 #Alles vor dem klatschen wird gelöscht
 data = data.iloc[clap_data:]
 
+datei_name = data['loggingTime(txt)'].iloc[0]
+
 clap_data_time = data[time_colum].iloc[clap_data]
 
 def convert_to_seconds(data_point):
@@ -46,7 +48,7 @@ def label_data(points):
 
 marked_values = []
 label_data(points=points)
-data.to_csv('labeld_dataframe.csv', index=True, header=True)
+data.to_csv(f'{datei_name}_ivo_heck.csv', index=True, header=True)
 print(data['label'].dropna())
 
 plt.plot(data['accelerometerAccelerationX(G)']) 
