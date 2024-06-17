@@ -1,9 +1,9 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-data = pd.read_csv("daten/TischtennisTest1.csv", usecols=[2])
+data = pd.read_csv("stream Apple Watch 240617 17_04_36.csv")
 
-plt.plot(data) 
+plt.plot(data['accelerometerAccelerationX(G)']) 
 
 plt.xlabel('Index') 
 plt.show()
