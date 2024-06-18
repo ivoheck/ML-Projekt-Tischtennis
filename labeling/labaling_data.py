@@ -2,12 +2,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from enum import Enum, auto
 
-label_schlag = ['vorhand','rückhand','schmetterball','schupfball']
-label_schlag_fail = ['vorhand_fail','rückhand_fail','schmetterball_fail','schupfball_fail']
-
-label_angabe = ['angabe_vorhand','angabe_rückhand']
-label_angabe_fail = ['angabe_vorhand_fail','angabe_rückhand_fail']
-
 class Lable(Enum):
     vorhand = auto()
     rückhand = auto()
@@ -31,7 +25,7 @@ time_colum = 'accelerometerTimestamp_sinceReboot(s)'
 data = pd.read_csv("stream Apple Watch 240617 17_04_36.csv", )
 
 clap_data = 136 #datenpunkt in dem das klatschen passiert
-clap_video = [4,20] #Sekunde(int) , frames(int) in dem das klatschen passiert
+clap_video = [0,4,20] #Minuten (int), Sekunde(int) , frames(int) in dem das klatschen passiert
 points = [[0,8,2,Lable.angabe_vorhand],
           [0,9,23,Lable.angabe_vorhand_fail],
           [0,16,1,Lable.angabe_vorhand],
@@ -90,9 +84,11 @@ datei_name = data['loggingTime(txt)'].iloc[0]
 clap_data_time = data[time_colum].iloc[clap_data]
 
 def convert_to_seconds(data_point):
-    seconds = float(data_point[0])
-    frames = float(data_point[1])
+    minutes = float(data_point[0])
+    seconds = float(data_point[1])
+    frames = float(data_point[2])
     
+    seconds += minutes * 60
     seconds += frames/video_fps
     return seconds
 
@@ -111,7 +107,7 @@ def label_data(points):
     for point in points:
         seconds = convert_to_seconds(point)
         seconds -= convert_to_seconds(clap_video)
-        label = point[2]
+        label = point[3].name
 
         if seconds > 0:
             label_at(seconds, label)
