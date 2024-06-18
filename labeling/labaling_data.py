@@ -2,79 +2,17 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from enum import Enum, auto
 
-class Lable(Enum):
-    vorhand = auto()
-    rückhand = auto()
-    schmetterball = auto()
-    schlupfball = auto()
-
-    vorhand_fail = auto()
-    rückhand_fail = auto()
-    schmetterball_fail = auto()
-    schlupfball_fail = auto()
-
-    angabe_vorhand = auto()
-    angabe_rückhand = auto()
-
-    angabe_vorhand_fail = auto()
-    angabe_rückhand_fail = auto()
+import lable_config
 
 time_colum = 'accelerometerTimestamp_sinceReboot(s)'
 
 #Daten satz der gelabelt werden soll
-data = pd.read_csv("stream Apple Watch 240617 17_04_36.csv", )
+data = lable_config.data
 
-clap_data = 136 #datenpunkt in dem das klatschen passiert
-clap_video = [0,4,20] #Minuten (int), Sekunde(int) , frames(int) in dem das klatschen passiert
-points = [[0,8,2,Lable.angabe_vorhand],
-          [0,9,23,Lable.angabe_vorhand_fail],
-          [0,16,1,Lable.angabe_vorhand],
-          [0,17,21,Lable.schlupfball],
-          [0,19,10,Lable.rückhand_fail],
-          [0,21,22, Lable.angabe_vorhand],
-          [0,23,19, Lable.vorhand_fail],
-          [0,25,13, Lable.angabe_vorhand],
-          [0,27,13, Lable.vorhand_fail],
-          [0,29,20, Lable.angabe_vorhand],
-          [0,31,11,Lable.vorhand],
-          [0,33,5,Lable.vorhand],
-          [0,34,20,Lable.rückhand],
-          [0,40,17,Lable.angabe_vorhand],
-          [0,42,14,Lable.vorhand],
-          [0,44,11,Lable.rückhand],
-          [0,52,16,Lable.vorhand],
-          [0,54,10,Lable.rückhand],
-          [0,56,5,Lable.rückhand_fail],
-          [1,8,17,Lable.angabe_vorhand_fail],#hier
-          [1,12,0,Lable.angabe_vorhand],
-          [1,14,1,Lable.vorhand],
-          [1,17,15,Lable.angabe_vorhand],
-          [1,19,10,Lable.vorhand],
-          [1,21,2,Lable.rückhand],
-          [1,25,8,Lable.vorhand],
-          [1,29,18,Lable.angabe_vorhand],
-          [1,31,12,Lable.rückhand],
-          [1,33,9,Lable.rückhand],
-          [1,38,17,Lable.angabe_vorhand],
-          [1,42,23,Lable.schlupfball],
-          [1,44,22,Lable.schlupfball],
-          [1,47,8,Lable.angabe_vorhand],
-          [1,49,3,Lable.vorhand],#fail
-          [1,51,8,Lable.angabe_vorhand],
-          [1,53,0,Lable.rückhand],
-          [1,54,23,Lable.vorhand],
-          [1,57,2,Lable.rückhand],
-          [1,59,24,Lable.schmetterball],#fail
-          [2,2,0,Lable.schmetterball],#fail
-          [2,9,9,Lable.schlupfball],#eindeutig
-          [2,11,8,Lable.rückhand],
-          [2,13,17,Lable.schmetterball],
-          [2,23,20,Lable.schlupfball],
-          [2,25,9,Lable.rückhand],#fail
-          [2,27,23,Lable.angabe_vorhand],
-          [2,29,23,Lable.schlupfball],
-          ] #list<list<int,int,String>> sekunde, frame, label
-video_fps = 25
+clap_data = lable_config.clap_data
+clap_video = lable_config.clap_video
+points = lable_config.points
+video_fps = lable_config.video_fps
 
 #Alles vor dem klatschen wird gelöscht
 data = data.iloc[clap_data:]
@@ -92,14 +30,23 @@ def convert_to_seconds(data_point):
     seconds += frames/video_fps
     return seconds
 
+def check_for_timestamp_out_of_range(timestamp):
+    max_time = data[time_colum].iloc[-1]
+    return timestamp <= max_time
+
 def label_at(seconds, label):
     #Bei diesem Zeitstempel muss gelabelt werden
     timestamp = seconds + clap_data_time
 
-    index = (data[time_colum] - timestamp).abs().argmin()
-    data.at[index,'label'] = label
+    if check_for_timestamp_out_of_range(timestamp):
 
-    marked_values.append(index)
+        index = (data[time_colum] - timestamp).abs().argmin()
+        data.at[index,'label'] = label
+
+        marked_values.append(index)
+
+    else:
+        print('timestap is out of range cant be labled')
     
 
 def label_data(points):
