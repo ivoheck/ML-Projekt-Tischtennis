@@ -7,15 +7,49 @@ import seaborn as sns
 from sklearn.model_selection import train_test_split
 import os
 
-num_classes = 3  # Vorhand, Rückhand, schmetterball, kein Schlag
+num_classes = 4  # Vorhand, Rückhand, schmetterball, kein Schlag
 hit_duration = 30 # datenpunkte für einen schlag bei 30 insgesamt ein datenpunkt mehr als angegeben
 data_path = '../labeled_data_raw/' #Ordner in dehm die roh daten liegen
 feature = 3
+
+def extract_data(label,last_index,data,numpy_set):
+    for index in label:
+        if index - hit_duration/2 >= 0 and index + hit_duration/2 <= last_index:
+            data_set = data[index-int(hit_duration/2):index+int(hit_duration/2)+1]
+            numpy_data_set = data_set.values
+            numpy_set = np.append(numpy_set, [numpy_data_set], axis=0).astype(np.float32) 
+
+    return numpy_set
+
+def extract_data_no_hit(label,last_index,data,numpy_set,max_label):
+    #index is the index of the label in the data set, i is the index of the list
+    count = 0
+    for i,index in enumerate(label):
+        #TODO: handel first case
+        if i == 0:
+            pass
+
+        elif i + 1 <= len(label) -1:
+            prev = index
+            
+            while label[i+1] - prev >= hit_duration + 1:
+                count += 1
+                prev += int(hit_duration) + int(hit_duration/2) + 1
+
+                data_set = data[prev + int(hit_duration/2) : prev+int(hit_duration) + int(hit_duration/2) + 1]
+                numpy_data_set = data_set.values
+                numpy_set = np.append(numpy_set, [numpy_data_set], axis=0).astype(np.float32)
+
+                if count >= max_label:
+                   return numpy_set
+
+    return numpy_set
 
 def read_data(data_path):
     numpy_set_vorhand = np.empty((0, hit_duration + 1, feature), dtype=float)
     numpy_set_rückhand = np.empty((0, hit_duration + 1, feature), dtype=float)
     numpy_set_schmetterball = np.empty((0, hit_duration + 1, feature), dtype=float)
+    numpy_set_kein_schlag = np.empty((0, hit_duration + 1, feature), dtype=float)
 
     for filename in os.listdir(data_path):
         path = os.path.join(data_path, filename)
@@ -30,35 +64,27 @@ def read_data(data_path):
             label_vorhand = df[df['label'].str.contains('vorhand', case=False, na=False)].index.tolist()
             label_rückhand = df[df['label'].str.contains('rückhand', case=False, na=False)].index.tolist()
             label_schmetterball = df[df['label'].str.contains('schmetterball', case=False, na=False)].index.tolist()
+            label_kein_schlag = df[df['label'].notna()].index
 
-            for index in label_vorhand:
-                if index - hit_duration/2 >= 0 and index + hit_duration/2 <= last_index:
-                    data_set = data[index-int(hit_duration/2):index+int(hit_duration/2)+1]
-                    numpy_set = data_set.values
-                    numpy_set_vorhand = np.append(numpy_set_vorhand, [numpy_set], axis=0).astype(np.float32) 
+            numpy_set_vorhand = extract_data(label=label_vorhand,last_index=last_index,data=data,numpy_set=numpy_set_vorhand)
+            numpy_set_rückhand = extract_data(label=label_rückhand,last_index=last_index,data=data,numpy_set=numpy_set_rückhand)
+            numpy_set_schmetterball = extract_data(label=label_schmetterball,last_index=last_index,data=data,numpy_set=numpy_set_schmetterball)
 
-            for index in label_rückhand:
-                if index - hit_duration/2 >= 0 and index + hit_duration/2 <= last_index:
-                    data_set = data[index-int(hit_duration/2):index+int(hit_duration/2)+1]
-                    numpy_set = data_set.values
-                    numpy_set_rückhand = np.append(numpy_set_rückhand, [numpy_set], axis=0).astype(np.float32) 
-
-            for index in label_schmetterball:
-                if index - hit_duration/2 >= 0 and index + hit_duration/2 <= last_index:
-                    data_set = data[index-int(hit_duration/2):index+int(hit_duration/2)+1]
-                    numpy_set = data_set.values
-                    numpy_set_schmetterball = np.append(numpy_set_schmetterball, [numpy_set], axis=0).astype(np.float32) 
+            max_label = max(len(label_vorhand) , len(label_rückhand) , len(label_schmetterball))
+            numpy_set_kein_schlag = extract_data_no_hit(label=label_kein_schlag,last_index=last_index,data=data,numpy_set=numpy_set_kein_schlag,max_label=max_label)
 
     labels_vorhand = np.zeros(numpy_set_vorhand.shape[0], dtype=int)      # Klasse 0 für 'vorhand'
     labels_rückhand = np.ones(numpy_set_rückhand.shape[0], dtype=int)    # Klasse 1 für 'rückhand'
     labels_schmetterball = np.full(numpy_set_schmetterball.shape[0], 2)   # Klasse 2 für 'schmetterball'
+    labels_kein_schlag = np.full(numpy_set_kein_schlag.shape[0], 3)   # Klasse 3 für 'kein_schlag'
 
-    y = np.concatenate([labels_vorhand, labels_rückhand, labels_schmetterball])
-    X = np.concatenate([numpy_set_vorhand, numpy_set_rückhand, numpy_set_schmetterball])
+    y = np.concatenate([labels_vorhand, labels_rückhand, labels_schmetterball ,labels_kein_schlag])
+    X = np.concatenate([numpy_set_vorhand, numpy_set_rückhand, numpy_set_schmetterball,numpy_set_kein_schlag])
 
     print(numpy_set_vorhand.shape)
     print(numpy_set_rückhand.shape)
     print(numpy_set_schmetterball.shape)
+    print(numpy_set_kein_schlag.shape)
 
 
     #Split data in train and test sets
@@ -80,13 +106,13 @@ model.compile(optimizer=keras.optimizers.Adam(), loss=keras.losses.categorical_c
 print(model.summary())
 
 # Set parameters for data splitting and training
-TEST_SIZE = 0.3
+TEST_SIZE = 0.2
 BATCH_SIZE = 64
 EPOCHS = 50
-LABELS = ['vorhand', 'rückhand', 'schmetterball']
+LABELS = ['vorhand', 'rückhand', 'schmetterball','kein_schlag']
 
 # Encode the labels using One-Hot-Encoding
-y_train_encoded = tf.one_hot(indices=y_train, depth=3)
+y_train_encoded = tf.one_hot(indices=y_train, depth=num_classes)
 
 # Train model using validation split
 stopping = keras.callbacks.EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
