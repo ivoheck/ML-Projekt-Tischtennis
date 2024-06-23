@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from enum import Enum, auto
 
-import lable_config_ivo_heck_005_2006 as lable_config
+import lable_config_ivo_heck_17_04_36 as lable_config
 
 time_colum = 'accelerometerTimestamp_sinceReboot(s)'
 
