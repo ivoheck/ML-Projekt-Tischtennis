@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from enum import Enum, auto
 
-import lable_config
+import lable_config_ivo_heck_005_2006 as lable_config
 
 time_colum = 'accelerometerTimestamp_sinceReboot(s)'
 
@@ -46,7 +46,11 @@ def label_at(seconds, label):
         marked_values.append(index)
 
     else:
+        print(timestamp)
         print('timestap is out of range cant be labled')
+        index = (data[time_colum] - timestamp).abs().argmin()
+        data.at[index,'label'] = label
+        marked_values.append(index)
     
 
 def label_data(points):

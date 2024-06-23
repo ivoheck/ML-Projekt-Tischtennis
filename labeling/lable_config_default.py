@@ -9,6 +9,8 @@ class Lable(Enum):
     angabe_vorhand = auto()
     angabe_rückhand = auto()
 
+    fail = auto()
+
 time_colum = 'accelerometerTimestamp_sinceReboot(s)'
 
 #Daten satz der gelabelt werden soll
@@ -20,5 +22,8 @@ clap_video = [0,13,6] #Minuten (int), Sekunde(int) , frames(int) in dem das klat
 video_fps = 25
 
 points = [
-        [0,20,12,Lable]
+        [0,20,12,Lable.vorhand],
+        [0,20,12,Lable.vorhand],
+        [0,20,12,Lable.vorhand],
+        [0,20,12,Lable.vorhand],
           ] #Minute, Sekunde, Frame, Label
