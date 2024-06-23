@@ -15,7 +15,7 @@ points = lable_config.points
 video_fps = lable_config.video_fps
 
 #Alles vor dem klatschen wird gelöscht
-data = data.iloc[clap_data:]
+#data = data.iloc[clap_data:]
 
 datei_name = data['loggingTime(txt)'].iloc[0]
 
