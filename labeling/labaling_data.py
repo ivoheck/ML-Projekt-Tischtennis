@@ -48,9 +48,7 @@ def label_at(seconds, label):
     else:
         print(timestamp)
         print('timestap is out of range cant be labled')
-        index = (data[time_colum] - timestamp).abs().argmin()
-        data.at[index,'label'] = label
-        marked_values.append(index)
+        
     
 
 def label_data(points):
