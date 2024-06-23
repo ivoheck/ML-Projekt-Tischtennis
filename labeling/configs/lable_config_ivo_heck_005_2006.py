@@ -18,11 +18,10 @@ data = pd.read_csv("daten/Watch_L_005_2006.csv", )
 
 clap_data = 727 #datenpunkt in dem das klatschen passiert
 clap_video = [0,6,4] #Minuten (int), Sekunde(int) , frames(int) in dem das klatschen passiert
-
 video_fps = 25
 
 points = [
-    [0,6,5,Lable.fail],
+        [0,6,5,Lable.fail],
         [0,10,14,Lable.angabe_vorhand],
         [0,12,5,Lable.rückhand],
         [0,14,3,Lable.vorhand],
