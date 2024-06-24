@@ -95,7 +95,7 @@ def read_data(data_path_30,data_path_90,data_path_100):
     numpy_set_kein_schlag = np.empty((0, hit_duration + 1, feature), dtype=float)
 
     numpy_set_vorhand, numpy_set_rückhand, numpy_set_schmetterball, numpy_set_kein_schlag = get_csv_from_directory(data_path_30,30,numpy_set_vorhand, numpy_set_rückhand, numpy_set_schmetterball,numpy_set_kein_schlag)
-
+    numpy_set_vorhand, numpy_set_rückhand, numpy_set_schmetterball, numpy_set_kein_schlag = get_csv_from_directory(data_path_90,90,numpy_set_vorhand, numpy_set_rückhand, numpy_set_schmetterball,numpy_set_kein_schlag)
     numpy_set_vorhand, numpy_set_rückhand, numpy_set_schmetterball, numpy_set_kein_schlag = get_csv_from_directory(data_path_100,100,numpy_set_vorhand, numpy_set_rückhand, numpy_set_schmetterball,numpy_set_kein_schlag)
 
     labels_vorhand = np.zeros(numpy_set_vorhand.shape[0], dtype=int)      # Klasse 0 für 'vorhand'
