@@ -190,6 +190,7 @@ def generate_labeld_data(labels,clap_frame,clap_data_point):
     for point in labels:
         seconds = frames_to_seconds(point[0])
         seconds -= frames_to_seconds(clap_frame[0])
+
         if seconds > 0:
             label_at(seconds, point[1],clap_data_time)
 
