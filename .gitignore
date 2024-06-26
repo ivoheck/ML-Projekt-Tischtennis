@@ -1,2 +1,3 @@
 model/virtualenv
-semi_auto_labeling/venv
+labeling/semi_auto_labeling/venv
+labeling/semi_auto_labeling/data
