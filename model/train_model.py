@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report
 import os
 
 def extract_data(label,last_index,data,numpy_set,herz):
@@ -163,3 +164,15 @@ sns.heatmap(confusion_matrix, xticklabels=LABELS, yticklabels=LABELS, annot=True
 plt.xlabel('Prediction')
 plt.ylabel('Label')
 plt.show()
+
+# F1-Score und andere Metriken berechnen
+report = classification_report(y_test, y_predicted, target_names=LABELS, output_dict=True)
+print(report)
+
+# Extrahiere den gewichteten F1-Score
+weighted_f1_score = report['weighted avg']['f1-score']
+print(f"Weighted F1-Score: {weighted_f1_score:.4f}")
+
+# Speichern des gesamten Modells
+model.save('model.h5')
+

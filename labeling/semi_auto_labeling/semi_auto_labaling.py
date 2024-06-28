@@ -146,6 +146,7 @@ def show_video_with_controls(video_path):
 
         elif key == 81:  # ASCII-Code für die linke Pfeiltaste
             current_frame -= 1
+            print('test')
 
         elif key == 83: #rechte pfeiltaste
             current_frame += 1
@@ -175,7 +176,7 @@ def label_at(seconds, label, clap_data_time):
     if check_for_timestamp_out_of_range(timestamp):
 
         index = (data[time_colum] - timestamp).abs().argmin()
-        data.at[index,'label'] = label
+        data.at[index,'label'] = label.name
 
         marked_values.append(index)
 
@@ -193,9 +194,6 @@ def generate_labeld_data(labels,clap_frame,clap_data_point):
 
         if seconds > 0:
             label_at(seconds, point[1],clap_data_time)
-
-
-
 
 
 class Lable(Enum):
@@ -236,7 +234,7 @@ def main():
 
 main()
 
-datei_name = data['loggingTime(txt)'].iloc[0]
+datei_name = 'data001_2006'#data['loggingTime(txt)'].iloc[0]plt.axvline(x=x_position, color='red', linestyle='--', ymin=0.5)
 data.to_csv(f'{datei_name}_ivo_heck.csv', index=True, header=True)
 print(data['label'].dropna())
 
