@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from enum import Enum, auto
 
-import lable_config
+import lable_config_ivo_heck_Watch_L_006_2006 as lable_config
 
 time_colum = 'accelerometerTimestamp_sinceReboot(s)'
 
@@ -15,7 +15,7 @@ points = lable_config.points
 video_fps = lable_config.video_fps
 
 #Alles vor dem klatschen wird gelöscht
-data = data.iloc[clap_data:]
+#data = data.iloc[clap_data:]
 
 datei_name = data['loggingTime(txt)'].iloc[0]
 
@@ -46,7 +46,9 @@ def label_at(seconds, label):
         marked_values.append(index)
 
     else:
+        print(timestamp)
         print('timestap is out of range cant be labled')
+        
     
 
 def label_data(points):
