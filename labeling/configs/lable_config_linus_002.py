@@ -1,0 +1,138 @@
+import pandas as pd
+from enum import Enum, auto
+
+
+class Lable(Enum):
+    vorhand = auto()
+    rückhand = auto()
+    schmetterball = auto()
+
+    angabe_vorhand = auto()
+    angabe_rückhand = auto()
+
+    fail = auto()
+
+time_colum = 'accelerometerTimestamp_sinceReboot(s)'
+
+#Daten satz der gelabelt werden soll
+data = pd.read_csv(r"C:\Uni\\Watch_L_002_2006.csv", )
+
+clap_data = 1063 #datenpunkt in dem das klatschen passiert
+clap_video = [0,4,10] #Minuten (int), Sekunde(int) , frames(int) in dem das klatschen passiert
+
+video_fps = 25
+
+points = [
+        [0,8,8,Lable.rückhand],
+        [0,9,19,Lable.rückhand],
+        [0,11,15,Lable.rückhand],
+        [0,13,1,Lable.fail],
+        [0,19,3,Lable.angabe_rückhand],
+        [0,20,21,Lable.vorhand],
+        [0,22,11,Lable.rückhand],
+        [0,24,3,Lable.rückhand],
+        [0,25,19,Lable.rückhand],
+        [0,27,8,Lable.rückhand],
+        [0,28,21,Lable.rückhand],
+        [0,30,8,Lable.rückhand],
+        [0,31,20,Lable.rückhand],
+        [0,33,6,Lable.rückhand],
+        [0,34,20,Lable.rückhand],
+        [0,36,10,Lable.rückhand],
+        [0,37,23,Lable.rückhand],
+        [0,39,10,Lable.rückhand],
+        [0,40,20,Lable.fail],
+        [0,43,3,Lable.angabe_vorhand],
+        [0,44,18,Lable.rückhand],
+        [0,46,11,Lable.rückhand],
+        [0,47,24,Lable.rückhand],
+        [0,49,13,Lable.rückhand],
+        [0,50,23,Lable.rückhand],
+        [0,52,8,Lable.rückhand],
+        [0,53,16,Lable.fail],
+        [0,55,17,Lable.angabe_rückhand],
+        [0,57,11,Lable.vorhand],
+        [0,59,6,Lable.rückhand],
+        [1,1,9,Lable.rückhand],
+        [1,2,22,Lable.rückhand],
+        [1,4,12,Lable.rückhand],
+        [1,5,22,Lable.rückhand],
+        [1,7,9,Lable.rückhand],
+        [1,8,21,Lable.rückhand],
+        [1,10,7,Lable.rückhand],
+        [1,11,15,Lable.rückhand],
+        [1,12,24,Lable.rückhand],
+        [1,14,14,Lable.rückhand],
+        [1,16,3,Lable.rückhand],
+        [1,17,15,Lable.rückhand],
+        [1,19,0,Lable.rückhand],
+        [1,20,11,Lable.rückhand],
+        [1,21,22,Lable.rückhand],
+        [1,23,7,Lable.rückhand],
+        [1,24,20,Lable.rückhand],
+        [1,26,7,Lable.rückhand],
+        [1,27,20,Lable.rückhand],
+        [1,29,8,Lable.rückhand],
+        [1,31,2,Lable.rückhand],
+        [1,32,10,Lable.rückhand],
+        [1,38,16,Lable.angabe_rückhand],
+        [1,40,8,Lable.vorhand],
+        [1,45,5,Lable.rückhand],
+        [1,49,8,Lable.rückhand],
+        [1,51,0,Lable.rückhand],
+        [1,52,17,Lable.rückhand],
+        [1,54,6,Lable.rückhand],
+        [1,55,20,Lable.rückhand],
+        [1,57,9,Lable.rückhand],
+        [1,58,21,Lable.rückhand],
+        [2,0,6,Lable.rückhand],
+        [2,1,22,Lable.rückhand],
+        [2,3,8,Lable.rückhand],
+        [2,4,19,Lable.rückhand],
+        [2,12,10,Lable.rückhand],
+        [2,13,23,Lable.rückhand],
+        [2,15,12,Lable.rückhand],
+        [2,16,22,Lable.rückhand],
+        [2,18,10,Lable.rückhand],
+        [2,19,21,Lable.rückhand],
+        [2,21,10,Lable.rückhand],
+        [2,23,0,Lable.rückhand],
+        [2,24,9,Lable.rückhand],
+        [2,25,20,Lable.fail],
+        [2,28,4,Lable.angabe_rückhand],
+        [2,29,16,Lable.rückhand],
+        [2,34,4,Lable.rückhand],
+        [2,35,17,Lable.fail],
+        [2,37,20,Lable.angabe_rückhand],
+        [2,39,12,Lable.rückhand],
+        [2,41,3,Lable.rückhand],
+        [2,42,19,Lable.rückhand],
+        [2,44,16,Lable.fail],
+        [2,47,8,Lable.angabe_rückhand],
+        [2,49,3,Lable.rückhand],
+        [2,50,18,Lable.rückhand],
+        [2,52,10,Lable.rückhand],
+        [2,54,1,Lable.rückhand],
+        [2,55,13,Lable.rückhand],
+        [2,56,21,Lable.rückhand],
+        [2,58,7,Lable.rückhand],
+        [2,59,18,Lable.rückhand],
+        [3,1,8,Lable.rückhand],
+        [3,2,24,Lable.vorhand],
+        [3,4,17,Lable.rückhand],
+        [3,6,7,Lable.rückhand],
+        [3,7,21,Lable.rückhand],
+        [3,9,9,Lable.rückhand],
+        [3,10,21,Lable.rückhand],
+        [3,12,13,Lable.rückhand],
+        [3,14,4,Lable.rückhand],
+        [3,15,18,Lable.rückhand],
+        [3,17,12,Lable.rückhand],
+        [3,19,2,Lable.rückhand],
+        [3,21,0,Lable.rückhand],
+        [3,23,12,Lable.rückhand],
+        [3,25,1,Lable.rückhand],
+        [3,26,12,Lable.rückhand],
+        [3,27,24,Lable.rückhand],
+        [3,29,19,Lable.rückhand],
+          ] #Minute, Sekunde, Frame, Label
