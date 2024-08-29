@@ -40,6 +40,10 @@ for path in data_paths:
 labels = ['Vorhand', 'Rückhand', 'Schmetterball', 'Angabe Vorhand', 'Angabe Rückhand']
 counts = [label_vorhand, label_rückhand, label_schmetterball, label_angabe_vorhand, label_angabe_rückhand]
 
+
+print(labels)
+print(counts)
+
 # Balkendiagramm erstellen
 plt.figure(figsize=(10, 6))
 sns.barplot(x=labels, y=counts, palette='viridis')

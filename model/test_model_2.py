@@ -6,9 +6,6 @@ from sklearn.metrics import classification_report
 import numpy as np
 import os
 import pandas as pd
-import random
-import torch
-
 
 def get_data(data_path):
     csv_file = []
@@ -17,8 +14,8 @@ def get_data(data_path):
         if os.path.isfile(path):
             return pd.read_csv(path)
         
-#def check_consecutive_predictions(predictions, index, step_size):
-#    return predictions[index] == predictions[index + step_size] == predictions[index + 2 * step_size]
+def check_consecutive_predictions(predictions, index, step_size):
+    return predictions[index] == predictions[index + step_size] == predictions[index + 2 * step_size]
         
 def hadle_data(predictions,axs):
     count_vorhand = 0
@@ -32,7 +29,7 @@ def hadle_data(predictions,axs):
     index = 0
     i = 0
     last = [None,None,None,None,None]
-    #overshoot = 1 #15-20
+    overshoot = 1 #15-20
     while i <= len(predictions) -1:
         data_set = predictions[i]
         if data_set == 0:#vorhand
@@ -40,8 +37,8 @@ def hadle_data(predictions,axs):
                 count_vorhand += 1
                 axs[0, 0].axvline(x=index+(num_rows/2), color='blue', linestyle='--', ymax=0.5)
                 vorhand.append(index+(num_rows/2))
-                #i += overshoot
-                #index += overshoot * step_size
+                i += overshoot
+                index += overshoot * step_size
                 last = [3]
 
             i += 1
@@ -53,8 +50,8 @@ def hadle_data(predictions,axs):
                 count_rückhand += 1
                 axs[0, 1].axvline(x=index+(num_rows/2), color='blue', linestyle='--', ymax=0.5)
                 rückhand.append(index+(num_rows/2))
-                #i += overshoot
-                #index += overshoot * step_size
+                i += overshoot
+                index += overshoot * step_size
                 last = [3]
 
             i += 1
@@ -66,8 +63,8 @@ def hadle_data(predictions,axs):
                 count_schmetterball += 1
                 axs[1, 0].axvline(x=index+(num_rows/2), color='blue', linestyle='--', ymax=0.5)
                 schmetterball.append(index+(num_rows/2))
-                #i += overshoot
-                #index += overshoot * step_size
+                i += overshoot
+                index += overshoot * step_size
                 last = [3]
 
             i += 1
@@ -180,12 +177,25 @@ def plot_plot(axs,df,count_vorhand, count_rückhand, count_schmetterball):
     plt.show()
 
 
-def plot_data(df,predictions_df):
+def hadle_avg_diff_data(predictions,axs):
+    i = 0
+    index = 0
+
+    while i <= len(predictions) -1:
+        if predictions[i] == 1:
+            axs[0, 0].axvline(x=index+(num_rows/2), color='orange', linestyle='--', ymax=0.5)
+        
+        i += 1
+        index += 1 * step_size
+
+
+def plot_data(df,predictions_df,y_predicted_diff_avg):
     
     predictions = predictions_df['Prediction'].tolist()
 
     axs = init_plot(df)
     count_vorhand, count_rückhand, count_schmetterball, vorhand, rückhand, schmetterball = hadle_data(predictions,axs)
+    hadle_avg_diff_data(y_predicted_diff_avg,axs)
     plot_plot(axs,df,count_vorhand, count_rückhand, count_schmetterball)
 
     #plot_odds(predictions)
@@ -194,41 +204,57 @@ def plot_data(df,predictions_df):
     vorhand, rückhand, schmetterball, count_vorhand, count_rückhand, count_schmetterball = clean_data(vorhand, rückhand, schmetterball,axs)
     plot_plot(axs,df,count_vorhand, count_rückhand, count_schmetterball)
 
+def get_y_predicted_diff_avg(block_avg):
+    index = int(len(block_avg)/2)
+
+    data_set = block_avg[index-int(window_size/2):index+int(window_size/2)+1]
+    min_values = np.min(data_set, axis=0)
+    max_values = np.max(data_set, axis=0)
+    diff_values = [abs(min_values[0] - max_values[0]),abs(min_values[1] - max_values[1]),abs(min_values[2] - max_values[2])]
+
+    #TODO: evtl müssen immer 2 von 3 erfüllt sein
+    if diff_values[0] * bios > avg_diff_treshold[0] or diff_values[1] * bios > avg_diff_treshold[1] or diff_values[2] * bios > avg_diff_treshold[2]:
+        return 1
+    else:
+        return 0
+
 data_path = 'test_data'
-num_rows = 41 * 3 #für 90 herz daten
+num_rows = 38 * 3 #für 90 herz daten
 step_size = 6
 feature_list = ['accelerometerAccelerationX(G)', 'accelerometerAccelerationY(G)', 'accelerometerAccelerationZ(G)']
 merge_treshold = 50
-
+window_size = 10 #(11)
+avg_diff = [2.2121105134672865, 1.7243781282894333, 1.9091388904417044]
+avg_diff_no_hit = [0.5138788533595405, 0.538303284492524, 0.5019787962331712]
+avg_diff_treshold = [avg_diff[0] - avg_diff_no_hit[0],avg_diff[1] - avg_diff_no_hit[1],avg_diff[2] - avg_diff_no_hit[2]]
+bios = 1.4
 extracts = []
 
 #Funktioniert für 90 herz daten
 def main():
     df = get_data(data_path)
+    y_predicted_diff_avg = []
 
     for start in range(0, len(df) - num_rows + 1, step_size):
         extract = df.iloc[start:start + num_rows][feature_list].values
         block_avg = pd.DataFrame(extract).groupby(np.arange(len(extract)) // 3).mean().values
+        #TODO: check for block_avg with linear regration or something
+        y_predicted_diff_avg.append(get_y_predicted_diff_avg(block_avg))
         extracts.append(block_avg)
 
     X_test = np.array(extracts)
-
     print(X_test.shape) 
 
     # Laden des gesamten Modells
-    loaded_model = keras.models.load_model('model_28_08_mit_vorhand_angaben_neu.keras')
+    loaded_model = keras.models.load_model('model_cross_val.keras')
 
     loaded_model.summary()
 
     y_predicted = np.argmax(loaded_model.predict(x=X_test), axis=1)
 
-    print('extracts')
-    print(len(extracts))
-    print(len(y_predicted))
-
     predictions_df = pd.DataFrame(y_predicted, columns=['Prediction'])
 
-    plot_data(df,predictions_df)
+    plot_data(df,predictions_df,y_predicted_diff_avg)
 
 if __name__ == '__main__':
     main()

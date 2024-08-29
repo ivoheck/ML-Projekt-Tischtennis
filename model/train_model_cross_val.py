@@ -73,7 +73,7 @@ def extract_data_no_hit(label,last_index,data,numpy_set,max_label,herz):
                 numpy_data_set = data_set.values
                 numpy_set = np.append(numpy_set, [numpy_data_set], axis=0).astype(np.float32)
 
-                if count >= max_label:
+                if count >= max_label*0.5:
                    return numpy_set
 
     return numpy_set
@@ -134,7 +134,7 @@ def read_data(data_path_30,data_path_90,data_path_100):
     return X,y
 
 num_classes = 4  # Vorhand, Rückhand, schmetterball, kein Schlag
-hit_duration = 64 # datenpunkte für einen schlag bei 30 insgesamt ein datenpunkt mehr als angegeben
+hit_duration = 40 #44 IMMER EINER MEHR ALS ANGEGEN AUS 40 wird 41
 
 data_path_30 = '../labeled_data_raw_30_herz/' #Ordner in dehm die roh daten liegen
 data_path_90 = '../labeled_data_raw_90_herz/'
@@ -145,17 +145,11 @@ feature = len(feature_list)
 
 # Set parameters for data splitting and training
 TEST_SIZE = 0.2
-BATCH_SIZE = 64
-EPOCHS = 50
+BATCH_SIZE = 44
+EPOCHS = 61
 LABELS = ['vorhand', 'rückhand', 'schmetterball','kein_schlag']
 
-#X_train, X_test, y_train, y_test = read_data(data_path_30,data_path_90,data_path_100)
 X, y = read_data(data_path_30,data_path_90,data_path_100)
-
-# Encode the labels using One-Hot-Encoding
-#y_train_encoded = tf.keras.utils.to_categorical(y_train, num_classes=num_classes)
-#y_test_encoded = tf.keras.utils.to_categorical(y_test, num_classes=num_classes)
-
 
 # StratifiedKFold für Cross-Validation
 skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
@@ -163,6 +157,12 @@ skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
 best_model = None
 best_f1 = 0.0
 best_conf_matrix = None
+best_report = None
+f1_scores = []
+precisions = []
+recalls = []
+supports = []
+
 for train_index, val_index in skf.split(X, y):
     X_train_fold, X_val_fold = X[train_index], X[val_index]
     y_train_fold, y_val_fold = y[train_index], y[val_index]
@@ -173,12 +173,12 @@ for train_index, val_index in skf.split(X, y):
     #Set up model
     model = keras.Sequential([
     keras.layers.InputLayer(input_shape=(hit_duration + 1,feature)),
-    keras.layers.SimpleRNN(units=64, activation='relu', return_sequences=True),
-    keras.layers.SimpleRNN(units=64, activation='relu'),
+    keras.layers.SimpleRNN(units=31, activation='relu', return_sequences=True),
+    keras.layers.SimpleRNN(units=31, activation='relu'),
     keras.layers.Dense(num_classes, activation=keras.activations.softmax)
     ])
 
-    model.compile(optimizer=keras.optimizers.Adam(), loss=keras.losses.categorical_crossentropy, metrics=['accuracy'])
+    model.compile(optimizer=keras.optimizers.RMSprop(), loss=keras.losses.categorical_crossentropy, metrics=['accuracy'])
     #print(model.summary())
 
     stopping = keras.callbacks.EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
@@ -193,20 +193,35 @@ for train_index, val_index in skf.split(X, y):
 
     # Extrahiere den gewichteten F1-Score
     weighted_f1_score = report['weighted avg']['f1-score']
-    print(f"Weighted F1-Score: {weighted_f1_score:.4f}")
+    weighted_precision = report['weighted avg']['precision']
+    weighted_recall = report['weighted avg']['recall']
+    weighted_support = report['weighted avg']['support']
 
+    #print(f"Weighted F1-Score: {weighted_f1_score:.4f}")
+    f1_scores.append(weighted_f1_score)
+    precisions.append(weighted_precision)
+    recalls.append(weighted_recall)
+    supports.append(weighted_support)
     if weighted_f1_score > best_f1:
         best_f1 = weighted_f1_score
         best_model = model
         best_conf_matrix = conf_matrix
+        best_report = report
 
 
 fig = plt.figure()
-print(best_f1)
+report_df = pd.DataFrame(best_report).transpose()
 sns.heatmap(best_conf_matrix, xticklabels=LABELS, yticklabels=LABELS, annot=True, fmt='g')
+#sns.heatmap(report_df.iloc[:-1, :].T, annot=True, cmap="Blues", fmt=".2f")
 plt.xlabel('Prediction')
 plt.ylabel('Label')
 plt.show()
 
+print(best_f1)
+print('avg weighted f1 score',sum(f1_scores)/len(f1_scores))
+print('avg weighted recall score',sum(recalls)/len(recalls))
+print('avg weighted precision score',sum(precisions)/len(precisions))
+print('avg weighted f1 score',sum(supports)/len(supports))
+print(len(f1_scores))
 # Speichern des gesamten Modells
 best_model.save('model_cross_val.keras')
