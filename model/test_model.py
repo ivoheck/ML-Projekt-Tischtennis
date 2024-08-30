@@ -195,7 +195,7 @@ def plot_data(df,predictions_df):
     plot_plot(axs,df,count_vorhand, count_rückhand, count_schmetterball)
 
 data_path = 'test_data'
-num_rows = 41 * 3 #für 90 herz daten
+num_rows = 37 * 3 #für 90 herz daten
 step_size = 6
 feature_list = ['accelerometerAccelerationX(G)', 'accelerometerAccelerationY(G)', 'accelerometerAccelerationZ(G)']
 merge_treshold = 50
@@ -216,7 +216,7 @@ def main():
     print(X_test.shape) 
 
     # Laden des gesamten Modells
-    loaded_model = keras.models.load_model('model_28_08_mit_vorhand_angaben_neu.keras')
+    loaded_model = keras.models.load_model('model_29_08_mit_vorhand_angaben_final3.keras')
 
     loaded_model.summary()
 

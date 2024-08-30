@@ -64,19 +64,20 @@ def extract_data_no_hit(label,last_index,data,numpy_set,max_label,herz):
 
         elif i + 1 <= len(label) -1:
             prev = index
-            
-            while label[i+1] - prev >= hit_duration + 1:
+
+            while label[i+1] - prev >= 4 * hit_duration + 1:
                 count += 1
-                prev += int(hit_duration) + int(hit_duration/2) + 1
+                prev += 2 * int(hit_duration) + 1
 
                 data_set = data[prev + int(hit_duration/2) : prev+int(hit_duration) + int(hit_duration/2) + 1]
                 numpy_data_set = data_set.values
                 numpy_set = np.append(numpy_set, [numpy_data_set], axis=0).astype(np.float32)
 
-                if count >= max_label*0.5:
-                   return numpy_set
+                #if count >= max_label*1:
+                #   return numpy_set
 
     return numpy_set
+
 
 def get_csv_from_directory(data_path,herz,numpy_set_vorhand, numpy_set_rückhand, numpy_set_schmetterball, numpy_set_kein_schlag):
     for filename in os.listdir(data_path):
@@ -90,6 +91,9 @@ def get_csv_from_directory(data_path,herz,numpy_set_vorhand, numpy_set_rückhand
             last_index = label.shape[0] - 1
 
             label_vorhand = df[df['label'].str.contains('vorhand', case=False, na=False)].index.tolist()
+            label_angabe_vorhand = df[df['label'].str.contains('angabe_vorhand', case=False, na=False)].index.tolist()
+            label_vorhand = label_vorhand + label_angabe_vorhand
+
             label_rückhand = df[df['label'].str.contains('rückhand', case=False, na=False)].index.tolist()
             label_schmetterball = df[df['label'].str.contains('schmetterball', case=False, na=False)].index.tolist()
             label_kein_schlag = df[df['label'].notna()].index
@@ -113,6 +117,8 @@ def read_data(data_path_30,data_path_90,data_path_100):
     numpy_set_vorhand, numpy_set_rückhand, numpy_set_schmetterball, numpy_set_kein_schlag = get_csv_from_directory(data_path_90,90,numpy_set_vorhand, numpy_set_rückhand, numpy_set_schmetterball,numpy_set_kein_schlag)
     numpy_set_vorhand, numpy_set_rückhand, numpy_set_schmetterball, numpy_set_kein_schlag = get_csv_from_directory(data_path_100,100,numpy_set_vorhand, numpy_set_rückhand, numpy_set_schmetterball,numpy_set_kein_schlag)
 
+    numpy_set_kein_schlag = numpy_set_kein_schlag[:600, :, :]
+
     labels_vorhand = np.zeros(numpy_set_vorhand.shape[0], dtype=int)      # Klasse 0 für 'vorhand'
     labels_rückhand = np.ones(numpy_set_rückhand.shape[0], dtype=int)    # Klasse 1 für 'rückhand'
     labels_schmetterball = np.full(numpy_set_schmetterball.shape[0], 2)   # Klasse 2 für 'schmetterball'
@@ -134,7 +140,7 @@ def read_data(data_path_30,data_path_90,data_path_100):
     return X,y
 
 num_classes = 4  # Vorhand, Rückhand, schmetterball, kein Schlag
-hit_duration = 40 #44 IMMER EINER MEHR ALS ANGEGEN AUS 40 wird 41
+hit_duration = 36 #44 IMMER EINER MEHR ALS ANGEGEN AUS 40 wird 41
 
 data_path_30 = '../labeled_data_raw_30_herz/' #Ordner in dehm die roh daten liegen
 data_path_90 = '../labeled_data_raw_90_herz/'
@@ -145,8 +151,8 @@ feature = len(feature_list)
 
 # Set parameters for data splitting and training
 TEST_SIZE = 0.2
-BATCH_SIZE = 44
-EPOCHS = 61
+BATCH_SIZE = 58
+EPOCHS = 60
 LABELS = ['vorhand', 'rückhand', 'schmetterball','kein_schlag']
 
 X, y = read_data(data_path_30,data_path_90,data_path_100)
@@ -178,7 +184,7 @@ for train_index, val_index in skf.split(X, y):
     keras.layers.Dense(num_classes, activation=keras.activations.softmax)
     ])
 
-    model.compile(optimizer=keras.optimizers.RMSprop(), loss=keras.losses.categorical_crossentropy, metrics=['accuracy'])
+    model.compile(optimizer=keras.optimizers.Adam(), loss=keras.losses.categorical_crossentropy, metrics=['accuracy'])
     #print(model.summary())
 
     stopping = keras.callbacks.EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
@@ -219,9 +225,9 @@ plt.show()
 
 print(best_f1)
 print('avg weighted f1 score',sum(f1_scores)/len(f1_scores))
-print('avg weighted recall score',sum(recalls)/len(recalls))
-print('avg weighted precision score',sum(precisions)/len(precisions))
-print('avg weighted f1 score',sum(supports)/len(supports))
+print('avg weighted recall',sum(recalls)/len(recalls))
+print('avg weighted precision',sum(precisions)/len(precisions))
+print('avg weighted support',sum(supports)/len(supports))
 print(len(f1_scores))
 # Speichern des gesamten Modells
-best_model.save('model_cross_val.keras')
+#best_model.save('model_cross_val.keras')

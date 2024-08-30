@@ -116,7 +116,7 @@ def read_data(data_path_30,data_path_90,data_path_100):
     numpy_set_vorhand, numpy_set_rückhand, numpy_set_schmetterball, numpy_set_kein_schlag = get_csv_from_directory(data_path_90,90,numpy_set_vorhand, numpy_set_rückhand, numpy_set_schmetterball,numpy_set_kein_schlag)
     numpy_set_vorhand, numpy_set_rückhand, numpy_set_schmetterball, numpy_set_kein_schlag = get_csv_from_directory(data_path_100,100,numpy_set_vorhand, numpy_set_rückhand, numpy_set_schmetterball,numpy_set_kein_schlag)
 
-    numpy_set_kein_schlag = numpy_set_kein_schlag[:1000, :, :]
+    numpy_set_kein_schlag = numpy_set_kein_schlag[:600, :, :]
 
     labels_vorhand = np.zeros(numpy_set_vorhand.shape[0], dtype=int)      # Klasse 0 für 'vorhand'
     labels_rückhand = np.ones(numpy_set_rückhand.shape[0], dtype=int)    # Klasse 1 für 'rückhand'
@@ -157,7 +157,7 @@ feature = len(feature_list)
 LABELS = ['vorhand', 'rückhand', 'schmetterball','kein_schlag']
 
 param_grid = {
-    'optimizer': ['adam', 'rmsprop'],
+    'optimizer': ['adam', 'rmsprop','sgd','adagrad'],
     'epochs': [60],#, 40, 50, 60, 70],
     'batch_size': [55,56,57,58, 60, 61,62],#, 40, 50, 60, 70],
     'hit_duration' : [32,34,36,38,40,42],

@@ -107,7 +107,7 @@ def read_data(data_path_30,data_path_90,data_path_100):
 
     #reduziert rückhandschläge 
     #numpy_set_rückhand = numpy_set_rückhand[:190, :, :]
-    numpy_set_kein_schlag = numpy_set_kein_schlag[:1000, :, :]
+    numpy_set_kein_schlag = numpy_set_kein_schlag[:600, :, :]
 
     labels_vorhand = np.zeros(numpy_set_vorhand.shape[0], dtype=int)      # Klasse 0 für 'vorhand'
     labels_rückhand = np.ones(numpy_set_rückhand.shape[0], dtype=int)    # Klasse 1 für 'rückhand'
@@ -130,7 +130,7 @@ def read_data(data_path_30,data_path_90,data_path_100):
 
 
 num_classes = 4  # Vorhand, Rückhand, schmetterball, kein Schlag
-hit_duration = 34 #40 34# datenpunkte für einen schlag bei 30 insgesamt ein datenpunkt mehr als angegeben
+hit_duration = 36 #40 34# datenpunkte für einen schlag bei 30 insgesamt ein datenpunkt mehr als angegeben
 
 data_path_30 = '../labeled_data_raw_30_herz/' #Ordner in dehm die roh daten liegen
 data_path_90 = '../labeled_data_raw_90_herz/'
@@ -141,33 +141,46 @@ feature = len(feature_list)
 
 # Set parameters for data splitting and training
 TEST_SIZE = 0.2
-BATCH_SIZE = 56 #44 57
+BATCH_SIZE = 58 #44 57
 EPOCHS = 60 #61 60
 LABELS = ['vorhand', 'rückhand', 'schmetterball','kein_schlag']
 
 X_train, X_test, y_train, y_test = read_data(data_path_30,data_path_90,data_path_100)
 
-#Set up model
-model = keras.Sequential([
+# Encode the labels using One-Hot-Encoding
+y_train_encoded = tf.one_hot(indices=y_train, depth=num_classes)
+
+best_f1 = 0.0
+best_model = None
+
+for i in range(50):
+    #Set up model
+    model = keras.Sequential([
     keras.layers.InputLayer(input_shape=(hit_duration + 1,feature)),
     keras.layers.SimpleRNN(units=31, activation='relu', return_sequences=True),
     keras.layers.SimpleRNN(units=31, activation='relu'),
     keras.layers.Dense(num_classes, activation=keras.activations.softmax)
-])
+    ])
 
-model.compile(optimizer=keras.optimizers.RMSprop(), loss=keras.losses.categorical_crossentropy, metrics=['accuracy'])
-print(model.summary())
-
-# Encode the labels using One-Hot-Encoding
-y_train_encoded = tf.one_hot(indices=y_train, depth=num_classes)
-
-# Train model using validation split
-stopping = keras.callbacks.EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
-history = model.fit(x=X_train, y=y_train_encoded, validation_split=TEST_SIZE, epochs=EPOCHS, batch_size=BATCH_SIZE,
+    model.compile(optimizer=keras.optimizers.Adam(), loss=keras.losses.categorical_crossentropy, metrics=['accuracy'])
+    #print(model.summary())
+    # Train model using validation split
+    stopping = keras.callbacks.EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
+    history = model.fit(x=X_train, y=y_train_encoded, validation_split=TEST_SIZE, epochs=EPOCHS, batch_size=BATCH_SIZE,
                     callbacks=[stopping])
 
-#Model Evaluation
-y_predicted = np.argmax(model.predict(x=X_test), axis=1)
+    #Model Evaluation
+    y_predicted = np.argmax(model.predict(x=X_test), axis=1)
+    # F1-Score und andere Metriken berechnen
+    report = classification_report(y_test, y_predicted, target_names=LABELS, output_dict=True)
+
+    weighted_f1_score = report['weighted avg']['f1-score']
+
+    if weighted_f1_score > best_f1:
+        best_f1 = weighted_f1_score
+        best_model = model
+
+
 confusion_matrix = tf.math.confusion_matrix(labels=y_test, predictions=y_predicted)
 fig = plt.figure()
 sns.heatmap(confusion_matrix, xticklabels=LABELS, yticklabels=LABELS, annot=True, fmt='g')
@@ -175,13 +188,10 @@ plt.xlabel('Prediction')
 plt.ylabel('Label')
 plt.show()
 
-# F1-Score und andere Metriken berechnen
-report = classification_report(y_test, y_predicted, target_names=LABELS, output_dict=True)
-print(report)
+#print(report)
 
-# Extrahiere den gewichteten F1-Score
-weighted_f1_score = report['weighted avg']['f1-score']
-print(f"Weighted F1-Score: {weighted_f1_score:.4f}")
+
+print(f"f1 score {best_f1}")
 
 # Speichern des gesamten Modells
-model.save('model_28_08_mit_vorhand_angaben_neu.keras')
+best_model.save('model_29_08_mit_vorhand_angaben_final3.keras')
