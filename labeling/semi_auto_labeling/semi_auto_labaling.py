@@ -208,7 +208,7 @@ class Lable(Enum):
 
 directory = 'data/'
 vidio_ending = '.MOV'
-fps = 25
+fps = 30
 time_colum = 'accelerometerTimestamp_sinceReboot(s)'
 
 labels = []
@@ -234,7 +234,7 @@ def main():
 
 main()
 
-datei_name = 'data001_2006'#data['loggingTime(txt)'].iloc[0]plt.axvline(x=x_position, color='red', linestyle='--', ymin=0.5)
+datei_name = 'test2_02_07_10_30'#data['loggingTime(txt)'].iloc[0]plt.axvline(x=x_position, color='red', linestyle='--', ymin=0.5)
 data.to_csv(f'{datei_name}_ivo_heck.csv', index=True, header=True)
 print(data['label'].dropna())
 

@@ -6,6 +6,9 @@ from sklearn.metrics import classification_report
 import numpy as np
 import os
 import pandas as pd
+import random
+import torch
+
 
 def get_data(data_path):
     csv_file = []
@@ -14,8 +17,8 @@ def get_data(data_path):
         if os.path.isfile(path):
             return pd.read_csv(path)
         
-def check_consecutive_predictions(predictions, index, step_size):
-    return predictions[index] == predictions[index + step_size] == predictions[index + 2 * step_size]
+#def check_consecutive_predictions(predictions, index, step_size):
+#    return predictions[index] == predictions[index + step_size] == predictions[index + 2 * step_size]
         
 def hadle_data(predictions,axs):
     count_vorhand = 0
@@ -29,7 +32,7 @@ def hadle_data(predictions,axs):
     index = 0
     i = 0
     last = [None,None,None,None,None]
-    overshoot = 1 #15-20
+    #overshoot = 1 #15-20
     while i <= len(predictions) -1:
         data_set = predictions[i]
         if data_set == 0:#vorhand
@@ -37,8 +40,8 @@ def hadle_data(predictions,axs):
                 count_vorhand += 1
                 axs[0, 0].axvline(x=index+(num_rows/2), color='blue', linestyle='--', ymax=0.5)
                 vorhand.append(index+(num_rows/2))
-                i += overshoot
-                index += overshoot * step_size
+                #i += overshoot
+                #index += overshoot * step_size
                 last = [3]
 
             i += 1
@@ -50,8 +53,8 @@ def hadle_data(predictions,axs):
                 count_rückhand += 1
                 axs[0, 1].axvline(x=index+(num_rows/2), color='blue', linestyle='--', ymax=0.5)
                 rückhand.append(index+(num_rows/2))
-                i += overshoot
-                index += overshoot * step_size
+                #i += overshoot
+                #index += overshoot * step_size
                 last = [3]
 
             i += 1
@@ -61,10 +64,10 @@ def hadle_data(predictions,axs):
         elif data_set == 2:
             if all(last[-i] == 2 for i in range(1, 3)):
                 count_schmetterball += 1
-                axs[1, 0].axvline(x=index+num_rows/2, color='blue', linestyle='--', ymax=0.5)
+                axs[1, 0].axvline(x=index+(num_rows/2), color='blue', linestyle='--', ymax=0.5)
                 schmetterball.append(index+(num_rows/2))
-                i += overshoot
-                index += overshoot * step_size
+                #i += overshoot
+                #index += overshoot * step_size
                 last = [3]
 
             i += 1
@@ -192,10 +195,8 @@ def plot_data(df,predictions_df):
     plot_plot(axs,df,count_vorhand, count_rückhand, count_schmetterball)
 
 data_path = 'test_data'
-num_rows = 64 * 3 #für 90 herz daten
+num_rows = 37 * 3 #für 90 herz daten
 step_size = 6
-batch_size = 5
-distance_threshold= batch_size * step_size
 feature_list = ['accelerometerAccelerationX(G)', 'accelerometerAccelerationY(G)', 'accelerometerAccelerationZ(G)']
 merge_treshold = 50
 
@@ -215,11 +216,15 @@ def main():
     print(X_test.shape) 
 
     # Laden des gesamten Modells
-    loaded_model = keras.models.load_model('model.h5')
+    loaded_model = keras.models.load_model('models/model_final.keras')
 
     loaded_model.summary()
 
     y_predicted = np.argmax(loaded_model.predict(x=X_test), axis=1)
+
+    print('extracts')
+    print(len(extracts))
+    print(len(y_predicted))
 
     predictions_df = pd.DataFrame(y_predicted, columns=['Prediction'])
 

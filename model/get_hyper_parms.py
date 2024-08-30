@@ -1,16 +1,19 @@
+from matplotlib import units
 import tensorflow as tf
 from tensorflow import keras
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.model_selection import train_test_split, cross_val_score
-from sklearn.metrics import classification_report, confusion_matrix,roc_curve, roc_auc_score
-from sklearn.model_selection import StratifiedKFold
-from scikeras.wrappers import KerasClassifier
+from sklearn.model_selection import train_test_split
 import os
 import random
 import torch
+from sklearn.model_selection import ParameterGrid
+from tqdm import tqdm
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import f1_score
+import time
 
 np.random.seed(42)
 tf.random.set_seed(42)
@@ -64,17 +67,17 @@ def extract_data_no_hit(label,last_index,data,numpy_set,max_label,herz):
 
         elif i + 1 <= len(label) -1:
             prev = index
-            
-            while label[i+1] - prev >= hit_duration + 1:
+
+            while label[i+1] - prev >= 4 * hit_duration + 1:
                 count += 1
-                prev += int(hit_duration) + int(hit_duration/2) + 1
+                prev += 2 * int(hit_duration) + 1
 
                 data_set = data[prev + int(hit_duration/2) : prev+int(hit_duration) + int(hit_duration/2) + 1]
                 numpy_data_set = data_set.values
                 numpy_set = np.append(numpy_set, [numpy_data_set], axis=0).astype(np.float32)
 
-                if count >= max_label:
-                   return numpy_set
+                #if count >= max_label*1:
+                #   return numpy_set
 
     return numpy_set
 
@@ -113,6 +116,8 @@ def read_data(data_path_30,data_path_90,data_path_100):
     numpy_set_vorhand, numpy_set_rückhand, numpy_set_schmetterball, numpy_set_kein_schlag = get_csv_from_directory(data_path_90,90,numpy_set_vorhand, numpy_set_rückhand, numpy_set_schmetterball,numpy_set_kein_schlag)
     numpy_set_vorhand, numpy_set_rückhand, numpy_set_schmetterball, numpy_set_kein_schlag = get_csv_from_directory(data_path_100,100,numpy_set_vorhand, numpy_set_rückhand, numpy_set_schmetterball,numpy_set_kein_schlag)
 
+    numpy_set_kein_schlag = numpy_set_kein_schlag[:600, :, :]
+
     labels_vorhand = np.zeros(numpy_set_vorhand.shape[0], dtype=int)      # Klasse 0 für 'vorhand'
     labels_rückhand = np.ones(numpy_set_rückhand.shape[0], dtype=int)    # Klasse 1 für 'rückhand'
     labels_schmetterball = np.full(numpy_set_schmetterball.shape[0], 2)   # Klasse 2 für 'schmetterball'
@@ -121,63 +126,26 @@ def read_data(data_path_30,data_path_90,data_path_100):
     y = np.concatenate([labels_vorhand, labels_rückhand, labels_schmetterball ,labels_kein_schlag])
     X = np.concatenate([numpy_set_vorhand, numpy_set_rückhand, numpy_set_schmetterball,numpy_set_kein_schlag])
 
-    print(numpy_set_vorhand.shape)
-    print(numpy_set_rückhand.shape)
-    print(numpy_set_schmetterball.shape)
-    print(numpy_set_kein_schlag.shape)
+    #print(numpy_set_vorhand.shape)
+    #print(numpy_set_rückhand.shape)
+    #print(numpy_set_schmetterball.shape)
+    #print(numpy_set_kein_schlag.shape)
 
     return X,y
 
 
-def train_model(hit_duration):
-    X, y = read_data(data_path_30,data_path_90,data_path_100)
-
-    # StratifiedKFold für Cross-Validation
-    skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
-
-    best_model = None
-    best_f1 = 0.0
-    best_conf_matrix = None
-    for train_index, val_index in skf.split(X, y):
-        X_train_fold, X_val_fold = X[train_index], X[val_index]
-        y_train_fold, y_val_fold = y[train_index], y[val_index]
-
-        y_train_fold_encoded = tf.keras.utils.to_categorical(y_train_fold, num_classes=num_classes)
-        y_val_fold_encoded = tf.keras.utils.to_categorical(y_val_fold, num_classes=num_classes)
-
-        #Set up model
-        model = keras.Sequential([
-            keras.layers.InputLayer(input_shape=(hit_duration + 1,feature)),
-            keras.layers.SimpleRNN(units=hit_duration, activation='relu', return_sequences=True),
-            keras.layers.SimpleRNN(units=hit_duration, activation='relu'),
-            keras.layers.Dense(num_classes, activation=keras.activations.softmax)
+def create_model(hit_duration, optimizer):
+    model = keras.Sequential([
+            keras.layers.InputLayer(input_shape=(hit_duration+1,feature)),
+            keras.layers.SimpleRNN(units=39, activation='relu', return_sequences=True),
+            keras.layers.SimpleRNN(units=39, activation='relu'),
+            keras.layers.Dense(num_classes, activation='softmax')
         ])
 
-        model.compile(optimizer=keras.optimizers.Adam(), loss=keras.losses.categorical_crossentropy, metrics=['accuracy'])
-        #print(model.summary())
-
-        stopping = keras.callbacks.EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
-        history = model.fit(x=X_train_fold, y=y_train_fold_encoded, validation_data=(X_val_fold, y_val_fold_encoded), epochs=EPOCHS, batch_size=hit_duration, callbacks=[stopping], verbose=0)
-
-        y_pred = np.argmax(model.predict(x=X_val_fold), axis=1)
-        conf_matrix = confusion_matrix(y_val_fold, y_pred)
-
-        # F1-Score und andere Metriken berechnen
-        report = classification_report(y_val_fold, y_pred, target_names=LABELS, output_dict=True)
-
-        # Extrahiere den gewichteten F1-Score
-        weighted_f1_score = report['weighted avg']['f1-score']
-
-        if weighted_f1_score > best_f1:
-            best_f1 = weighted_f1_score
-            best_model = model
-            best_conf_matrix = conf_matrix
-
-    return best_f1
+    model.compile(optimizer=optimizer, loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+    return model
 
 num_classes = 4  # Vorhand, Rückhand, schmetterball, kein Schlag
-hit_durations = range(40,71,10) # datenpunkte für einen schlag bei 30 insgesamt ein datenpunkt mehr als angegeben
-seeds = [42,43,44,45,46]
 
 data_path_30 = '../labeled_data_raw_30_herz/' #Ordner in dehm die roh daten liegen
 data_path_90 = '../labeled_data_raw_90_herz/'
@@ -186,26 +154,78 @@ data_path_100 = '../labeled_data_raw_100_herz/'
 feature_list = ['accelerometerAccelerationX(G)','accelerometerAccelerationY(G)','accelerometerAccelerationZ(G)']#,'motionYaw(rad)','motionRoll(rad)','motionPitch(rad)']
 feature = len(feature_list)
 
-# Set parameters for data splitting and training
-TEST_SIZE = 0.2
-#BATCH_SIZE = 64
-EPOCHS = 50
 LABELS = ['vorhand', 'rückhand', 'schmetterball','kein_schlag']
 
-best_f1_score = 0.0
-best_hit_duration = 0
-i = 1
-for hit_duration in hit_durations:
-    print(f'\033[92m {i/len(hit_durations)} \033[0m')
-    i += 1
-    BATCH_SIZE = hit_duration
+param_grid = {
+    'optimizer': ['adam', 'rmsprop','sgd','adagrad'],
+    'epochs': [60],#, 40, 50, 60, 70],
+    'batch_size': [55,56,57,58, 60, 61,62],#, 40, 50, 60, 70],
+    'hit_duration' : [32,34,36,38,40,42],
+}
 
-    f1_score = train_model(hit_duration)
+hit_duration = None
 
+def main():
+    start_time = time.time()
+    best_accuracy = 0.0
+    best_f1 = 0.0
+    best_params = {}
 
-    if f1_score > best_f1_score:
-        best_f1_score = f1_score
-        best_hit_duration = hit_duration
+    parameter_grid = list(ParameterGrid(param_grid))
+    total_iterations = len(parameter_grid)
 
-print(best_hit_duration)
+    progress_bar = tqdm(total=total_iterations, position=0, leave=True)
+
+    for params in ParameterGrid(param_grid):
+        global hit_duration
+        hit_duration = params['hit_duration']
+
+        X, y = read_data(data_path_30, data_path_90, data_path_100)
+        
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+        
+        model = create_model(params['hit_duration'], optimizer=params['optimizer'])
+        model.fit(X_train, y_train, epochs=params['epochs'], batch_size=params['batch_size'], verbose=0)
+        
+        y_pred = model.predict(X_test)
+        accuracy = accuracy_score(y_test, np.argmax(y_pred, axis=1))
+        f1 = f1_score(y_test, np.argmax(y_pred, axis=1), average='weighted')
+        
+        #if accuracy > best_accuracy:
+        #    best_accuracy = accuracy
+        #    best_params = params
+
+        if f1 > best_f1:
+            best_f1 = f1
+            best_params = params
+
+        progress_bar.update(1)
+    
+    end_time = time.time()
+    progress_bar.close()
+    print(f"Beste Parameter: {best_params}")
+    print(f"Bester F1: {best_f1}")
+    print(f"Zeit {end_time-start_time}")
+
+main()
+
+#print(best_hit_duration)
+#print(best_f1_score)
+
+#print(f1_scores)
+#print(hit_durations_res)
+#print(batch_sizes_res)
+
+# Linienplot erstellen
+#plt.figure(figsize=(10, 6))
+#plt.plot(hit_durations_res, f1_scores, marker='o', linestyle='-', color='b')#
+
+#plt.xlabel('Hit-duration')
+#plt.ylabel('F1-Score')
+
+# Gitternetz hinzufügen
+#plt.grid(True)
+
+# Plot anzeigen
+#plt.show()
 

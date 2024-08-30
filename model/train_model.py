@@ -4,23 +4,9 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.model_selection import train_test_split, cross_val_score
-from sklearn.metrics import classification_report, confusion_matrix,roc_curve, roc_auc_score
-from sklearn.model_selection import StratifiedKFold
-from scikeras.wrappers import KerasClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report
 import os
-import random
-import torch
-
-np.random.seed(42)
-tf.random.set_seed(42)
-random.seed(42)
-keras.utils.set_random_seed(42)
-torch.manual_seed(42)
-torch.cuda.manual_seed_all(42)
-
-os.environ['TF_DETERMINISTIC_OPS'] = '1'
-os.environ['TF_CUDNN_DETERMINISTIC'] = '1'
 
 def extract_data(label,last_index,data,numpy_set,herz):
     for index in label:
@@ -39,7 +25,7 @@ def extract_data(label,last_index,data,numpy_set,herz):
                 numpy_data_set = data_set.values
                 numpy_set = np.append(numpy_set, [numpy_data_set], axis=0).astype(np.float32) 
         
-        #TODO: find better way for doing this
+        #TODO: find better way for doing this: from scipy.signal import resample
         elif herz == 100:
             if index - (hit_duration/2)*3 >= 0 and index + (hit_duration/2)*3 <= last_index:
                 data_set = data[index-int(hit_duration/2)*3:index+int(hit_duration/2)*3+3]
@@ -78,7 +64,6 @@ def extract_data_no_hit(label,last_index,data,numpy_set,max_label,herz):
 
     return numpy_set
 
-
 def get_csv_from_directory(data_path,herz,numpy_set_vorhand, numpy_set_rückhand, numpy_set_schmetterball, numpy_set_kein_schlag):
     for filename in os.listdir(data_path):
         path = os.path.join(data_path, filename)
@@ -95,6 +80,9 @@ def get_csv_from_directory(data_path,herz,numpy_set_vorhand, numpy_set_rückhand
             label_vorhand = label_vorhand + label_angabe_vorhand
 
             label_rückhand = df[df['label'].str.contains('rückhand', case=False, na=False)].index.tolist()
+            #label_angaben_rückhand = df[df['label'].str.contains('angabe_rückhand', case=False, na=False)].index.tolist()
+            #label_rückhand = label_rückhand + label_angaben_rückhand
+
             label_schmetterball = df[df['label'].str.contains('schmetterball', case=False, na=False)].index.tolist()
             label_kein_schlag = df[df['label'].notna()].index
 
@@ -117,6 +105,8 @@ def read_data(data_path_30,data_path_90,data_path_100):
     numpy_set_vorhand, numpy_set_rückhand, numpy_set_schmetterball, numpy_set_kein_schlag = get_csv_from_directory(data_path_90,90,numpy_set_vorhand, numpy_set_rückhand, numpy_set_schmetterball,numpy_set_kein_schlag)
     numpy_set_vorhand, numpy_set_rückhand, numpy_set_schmetterball, numpy_set_kein_schlag = get_csv_from_directory(data_path_100,100,numpy_set_vorhand, numpy_set_rückhand, numpy_set_schmetterball,numpy_set_kein_schlag)
 
+    #reduziert rückhandschläge 
+    #numpy_set_rückhand = numpy_set_rückhand[:190, :, :]
     numpy_set_kein_schlag = numpy_set_kein_schlag[:600, :, :]
 
     labels_vorhand = np.zeros(numpy_set_vorhand.shape[0], dtype=int)      # Klasse 0 für 'vorhand'
@@ -134,13 +124,13 @@ def read_data(data_path_30,data_path_90,data_path_100):
 
 
     #Split data in train and test sets
-    #X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
-    #return X_train, X_test, y_train, y_test
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
 
-    return X,y
+    return X_train, X_test, y_train, y_test
+
 
 num_classes = 4  # Vorhand, Rückhand, schmetterball, kein Schlag
-hit_duration = 36 #44 IMMER EINER MEHR ALS ANGEGEN AUS 40 wird 41
+hit_duration = 34 #40 34# datenpunkte für einen schlag bei 30 insgesamt ein datenpunkt mehr als angegeben
 
 data_path_30 = '../labeled_data_raw_30_herz/' #Ordner in dehm die roh daten liegen
 data_path_90 = '../labeled_data_raw_90_herz/'
@@ -151,31 +141,19 @@ feature = len(feature_list)
 
 # Set parameters for data splitting and training
 TEST_SIZE = 0.2
-BATCH_SIZE = 58
-EPOCHS = 60
+BATCH_SIZE = 57 #44 57
+EPOCHS = 60 #61 60
 LABELS = ['vorhand', 'rückhand', 'schmetterball','kein_schlag']
 
-X, y = read_data(data_path_30,data_path_90,data_path_100)
+X_train, X_test, y_train, y_test = read_data(data_path_30,data_path_90,data_path_100)
 
-# StratifiedKFold für Cross-Validation
-skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+# Encode the labels using One-Hot-Encoding
+y_train_encoded = tf.one_hot(indices=y_train, depth=num_classes)
 
-best_model = None
 best_f1 = 0.0
-best_conf_matrix = None
-best_report = None
-f1_scores = []
-precisions = []
-recalls = []
-supports = []
+best_model = None
 
-for train_index, val_index in skf.split(X, y):
-    X_train_fold, X_val_fold = X[train_index], X[val_index]
-    y_train_fold, y_val_fold = y[train_index], y[val_index]
-
-    y_train_fold_encoded = tf.keras.utils.to_categorical(y_train_fold, num_classes=num_classes)
-    y_val_fold_encoded = tf.keras.utils.to_categorical(y_val_fold, num_classes=num_classes)
-
+for i in range(50):
     #Set up model
     model = keras.Sequential([
     keras.layers.InputLayer(input_shape=(hit_duration + 1,feature)),
@@ -186,48 +164,34 @@ for train_index, val_index in skf.split(X, y):
 
     model.compile(optimizer=keras.optimizers.Adam(), loss=keras.losses.categorical_crossentropy, metrics=['accuracy'])
     #print(model.summary())
-
+    # Train model using validation split
     stopping = keras.callbacks.EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
-    #history = model.fit(x=X_train_fold, y=y_train_fold, validation_data=(X_val_fold, y_val_fold), epochs=EPOCHS, batch_size=BATCH_SIZE, callbacks=[stopping], verbose=0)
-    history = model.fit(x=X_train_fold, y=y_train_fold_encoded, validation_data=(X_val_fold, y_val_fold_encoded), epochs=EPOCHS, batch_size=BATCH_SIZE, callbacks=[stopping], verbose=0)
+    history = model.fit(x=X_train, y=y_train_encoded, validation_split=TEST_SIZE, epochs=EPOCHS, batch_size=BATCH_SIZE,
+                    callbacks=[stopping])
 
-    y_pred = np.argmax(model.predict(x=X_val_fold), axis=1)
-    conf_matrix = confusion_matrix(y_val_fold, y_pred)
-
+    #Model Evaluation
+    y_predicted = np.argmax(model.predict(x=X_test), axis=1)
     # F1-Score und andere Metriken berechnen
-    report = classification_report(y_val_fold, y_pred, target_names=LABELS, output_dict=True)
+    report = classification_report(y_test, y_predicted, target_names=LABELS, output_dict=True)
 
-    # Extrahiere den gewichteten F1-Score
     weighted_f1_score = report['weighted avg']['f1-score']
-    weighted_precision = report['weighted avg']['precision']
-    weighted_recall = report['weighted avg']['recall']
-    weighted_support = report['weighted avg']['support']
 
-    #print(f"Weighted F1-Score: {weighted_f1_score:.4f}")
-    f1_scores.append(weighted_f1_score)
-    precisions.append(weighted_precision)
-    recalls.append(weighted_recall)
-    supports.append(weighted_support)
     if weighted_f1_score > best_f1:
         best_f1 = weighted_f1_score
         best_model = model
-        best_conf_matrix = conf_matrix
-        best_report = report
 
 
+confusion_matrix = tf.math.confusion_matrix(labels=y_test, predictions=y_predicted)
 fig = plt.figure()
-report_df = pd.DataFrame(best_report).transpose()
-sns.heatmap(best_conf_matrix, xticklabels=LABELS, yticklabels=LABELS, annot=True, fmt='g')
-#sns.heatmap(report_df.iloc[:-1, :].T, annot=True, cmap="Blues", fmt=".2f")
+sns.heatmap(confusion_matrix, xticklabels=LABELS, yticklabels=LABELS, annot=True, fmt='g')
 plt.xlabel('Prediction')
 plt.ylabel('Label')
 plt.show()
 
-print(best_f1)
-print('avg weighted f1 score',sum(f1_scores)/len(f1_scores))
-print('avg weighted recall',sum(recalls)/len(recalls))
-print('avg weighted precision',sum(precisions)/len(precisions))
-print('avg weighted support',sum(supports)/len(supports))
-print(len(f1_scores))
+#print(report)
+
+
+print(f"f1 score {best_f1}")
+
 # Speichern des gesamten Modells
-#best_model.save('model_cross_val.keras')
+best_model.save('model_mit_vorhand_angaben_final.keras')
