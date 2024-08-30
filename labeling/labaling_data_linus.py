@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from enum import Enum, auto
 
-import lable_config_linus_001 as lable_config
+import lable_config_linus_004 as lable_config
 
 time_colum = 'accelerometerTimestamp_sinceReboot(s)'
 
