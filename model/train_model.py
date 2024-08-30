@@ -130,7 +130,7 @@ def read_data(data_path_30,data_path_90,data_path_100):
 
 
 num_classes = 4  # Vorhand, Rückhand, schmetterball, kein Schlag
-hit_duration = 36 #40 34# datenpunkte für einen schlag bei 30 insgesamt ein datenpunkt mehr als angegeben
+hit_duration = 34 #40 34# datenpunkte für einen schlag bei 30 insgesamt ein datenpunkt mehr als angegeben
 
 data_path_30 = '../labeled_data_raw_30_herz/' #Ordner in dehm die roh daten liegen
 data_path_90 = '../labeled_data_raw_90_herz/'
@@ -141,7 +141,7 @@ feature = len(feature_list)
 
 # Set parameters for data splitting and training
 TEST_SIZE = 0.2
-BATCH_SIZE = 58 #44 57
+BATCH_SIZE = 57 #44 57
 EPOCHS = 60 #61 60
 LABELS = ['vorhand', 'rückhand', 'schmetterball','kein_schlag']
 
@@ -194,4 +194,4 @@ plt.show()
 print(f"f1 score {best_f1}")
 
 # Speichern des gesamten Modells
-best_model.save('model_29_08_mit_vorhand_angaben_final3.keras')
+best_model.save('model_mit_vorhand_angaben_final.keras')

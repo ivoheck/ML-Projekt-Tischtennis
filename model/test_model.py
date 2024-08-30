@@ -216,7 +216,7 @@ def main():
     print(X_test.shape) 
 
     # Laden des gesamten Modells
-    loaded_model = keras.models.load_model('model_29_08_mit_vorhand_angaben_final3.keras')
+    loaded_model = keras.models.load_model('models/model_final.keras')
 
     loaded_model.summary()
 
