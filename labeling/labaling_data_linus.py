@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from enum import Enum, auto
 
-import lable_config
+import lable_config_linus_001 as lable_config
 
 time_colum = 'accelerometerTimestamp_sinceReboot(s)'
 
@@ -68,7 +68,7 @@ labeled_data = data.copy()
 marked_values = label_data(labeled_data, points)
 
 # Speichern der gelabelten Daten
-labeled_data.to_csv(f'{datei_name}_henry_doose.csv', index=True, header=True)
+labeled_data.to_csv(f'{datei_name}_linus_q.csv', index=True, header=True)
 print(labeled_data['label'].dropna())
 
 # Plotten der Daten mit markierten Werten
