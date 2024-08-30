@@ -6,3 +6,4 @@ cd model/
 python3 test_model.py
 ```
  Weitere Testdatensätze befinden sich im Ordner "backupdata".
+Weitere Modelle können in der Datei test_model.py spezifiziert werden. Das finale trainierte Modell ist "model_final.keras".
